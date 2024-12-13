@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask Camera Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .video-container {
+            width: 100%;
+            max-width: 640px;
+            margin: 20px auto;
+            position: relative;
+        }
+
+        #videoFeed {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .start-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .stop-btn {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .capture-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        #objectCounts {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        #capturedImage {
+            max-width: 320px;
+            margin: 20px auto;
+            display: none;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+        }
+
+        .status {
+            text-align: center;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+
+        .test-btn {
+            background-color: #9c27b0;
+            color: white;
+        }
+        
+        .test-results {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        
+        .info {
+            background-color: #d9edf7;
+            color: #31708f;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Flask Camera Test Interface</h1>
+        
+        <div class="video-container">
+            <img id="videoFeed" style="display: none;" alt="Video Feed">
+            <img id="capturedImage" alt="Captured Image">
+        </div>
+
+        <div class="controls">
+            <button class="start-btn" onclick="startCamera()">Start Camera</button>
+            <button class="stop-btn" onclick="stopCamera()">Stop Camera</button>
+            <button class="capture-btn" onclick="captureImage()">Capture Image</button>
+            <button class="test-btn" onclick="testAPI()">Test API</button>
+        </div>
+
+        <div id="objectCounts">
+            <h3>Object Detection Results:</h3>
+            <pre id="detectionResults">No detections yet</pre>
+        </div>
+
+        <div id="status" class="status"></div>
+
+        <div id="testResults" class="test-results" style="display: none;">
+            <h3>API Test Results:</h3>
+            <pre id="apiTestResults"></pre>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5005';
+        let isStreamActive = false;
+
+        async function startCamera() {
+            try {
+                updateStatus('Starting camera...', 'info');
+                const response = await fetch(`${API_URL}/start_camera`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const videoFeed = document.getElementById('videoFeed');
+                    videoFeed.onerror = function() {
+                        updateStatus('Error loading video feed', 'error');
+                    };
+                    videoFeed.onload = function() {
+                        updateStatus('Camera started successfully', 'success');
+                    };
+                    videoFeed.src = `${API_URL}/video_feed?t=${new Date().getTime()}`; // Add timestamp to prevent caching
+                    videoFeed.style.display = 'block';
+                    document.getElementById('capturedImage').style.display = 'none';
+                    isStreamActive = true;
+                    startObjectCountsPolling();
+                } else {
+                    throw new Error('Failed to start camera');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                updateStatus('Failed to start camera: ' + error.message, 'error');
+            }
+        }
+
+        async function stopCamera() {
+            try {
+                const response = await fetch(`${API_URL}/stop_camera`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const videoFeed = document.getElementById('videoFeed');
+                    videoFeed.style.display = 'none';
+                    isStreamActive = false;
+                    updateStatus('Camera stopped successfully', 'success');
+                } else {
+                    throw new Error('Failed to stop camera');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                updateStatus('Failed to stop camera: ' + error.message, 'error');
+            }
+        }
+
+        function captureImage() {
+            const videoFeed = document.getElementById('videoFeed');
+            const capturedImage = document.getElementById('capturedImage');
+            
+            // Create a canvas to capture the current frame
+            const canvas = document.createElement('canvas');
+            canvas.width = videoFeed.width;
+            canvas.height = videoFeed.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(videoFeed, 0, 0);
+            
+            // Display the captured image
+            capturedImage.src = canvas.toDataURL('image/jpeg');
+            capturedImage.style.display = 'block';
+            videoFeed.style.display = 'none';
+            
+            updateStatus('Image captured successfully', 'success');
+        }
+
+        async function getObjectCounts() {
+            try {
+                const response = await fetch(`${API_URL}/object_summary`);
+                const data = await response.json();
+                document.getElementById('detectionResults').textContent = 
+                    JSON.stringify(data, null, 2);
+            } catch (error) {
+                console.error('Error fetching object counts:', error);
+            }
+        }
+
+        function startObjectCountsPolling() {
+            if (isStreamActive) {
+                getObjectCounts();
+                setTimeout(startObjectCountsPolling, 1000); // Poll every second
+            }
+        }
+
+        function updateStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+
+        // Check server status on page load
+        fetch(`${API_URL}/`)
+            .then(response => response.json())
+            .then(data => {
+                updateStatus('Server is running', 'success');
+            })
+            .catch(error => {
+                updateStatus('Server is not responding', 'error');
+            });
+
+        async function testAPI() {
+            try {
+                updateStatus('Testing API...', 'info');
+                const response = await fetch(`${API_URL}/test_api`);
+                const data = await response.json();
+                
+                const testResults = document.getElementById('testResults');
+                const apiTestResults = document.getElementById('apiTestResults');
+                
+                testResults.style.display = 'block';
+                apiTestResults.textContent = JSON.stringify(data, null, 2);
+                
+                if (data.status === 'success') {
+                    updateStatus('API test completed successfully', 'success');
+                } else {
+                    updateStatus('API test completed with errors', 'error');
+                }
+            } catch (error) {
+                console.error('Error testing API:', error);
+                updateStatus('Failed to test API: ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

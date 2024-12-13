@@ -1,0 +1,15 @@
+venv/
+.env
+.idea/
+*.log
+.*
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+*.pyz
+*.py
+*.tmp
+*.bak
+*.swp
