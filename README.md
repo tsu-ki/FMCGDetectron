@@ -1,9 +1,7 @@
 # Critiscan's Integrated Item Counting and Brand Detection: FMCGDetectron
 
 ## *Overview*
-![image](https://github.com/user-attachments/assets/ea69c5b0-2475-436a-ba11-6ca7f3212ebc)
-
-This repository is part of **Flipkart's Robotics Challenge Project** and focuses on **item counting** and **brand detection** within the FMCG (Fast-Moving Consumer Goods) sector. It provides robust detection capabilities by combining multiple models to process video streams and image data in real time.
+This repository is part of **Flipkart Grid 6.0 Robotics Track** and focuses on **item counting** and **brand detection** within the FMCG (Fast-Moving Consumer Goods) sector. It provides robust detection capabilities by combining multiple models to process video streams and image data in real time.
 
 - [Link to Website Repository](https://github.com/aanushkaguptaa/critiscan)
 - [Link to OCR Detection Model](https://github.com/tsu-ki/ocr-script-freshness-model)
@@ -43,6 +41,8 @@ FMCGDetectron integrates seamlessly with the **OCR Detection Model**, enabling a
     - Used for conditional generation and auxiliary tasks like understanding textual prompts or captions.
 5. **Custom Expiry Detection Model**:
     - Extracts expiry dates using Keras-based classification and regex patterns.
+  
+![image](https://github.com/user-attachments/assets/ea69c5b0-2475-436a-ba11-6ca7f3212ebc)      
 
 ### **2. Project Workflow**
 
