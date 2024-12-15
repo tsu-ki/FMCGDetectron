@@ -1,7 +1,8 @@
 # Critiscan's Integrated Item Counting and Brand Detection: FMCGDetectron
 
 ## *Overview*
-![Alt text](images\image.webp)
+![image](https://github.com/user-attachments/assets/ea69c5b0-2475-436a-ba11-6ca7f3212ebc)
+
 This repository is part of **Flipkart's Robotics Challenge Project** and focuses on **item counting** and **brand detection** within the FMCG (Fast-Moving Consumer Goods) sector. It provides robust detection capabilities by combining multiple models to process video streams and image data in real time.
 
 - [Link to Website Repository](https://github.com/aanushkaguptaa/critiscan)
